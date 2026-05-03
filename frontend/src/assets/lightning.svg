@@ -1,0 +1,6 @@
+<svg viewBox="0 0 24 24" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Orange 3D Shadow -->
+  <path d="M7 13L15 3L14 11H19L11 23L12 14H7V13Z" fill="#E58E00" stroke="#E58E00" stroke-width="1.5" stroke-linejoin="round" />
+  <!-- Main Yellow Bolt -->
+  <path d="M6 11L14 1L13 9H18L10 21L11 12H6V11Z" fill="#FFC800" stroke="#FFC800" stroke-width="1.5" stroke-linejoin="round" />
+</svg>

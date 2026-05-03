@@ -1,0 +1,8 @@
+<svg viewBox="0 0 24 24" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+  <g transform="rotate(-15 12 12)">
+    <!-- Back Dark Blue Card -->
+    <rect x="5" y="8" width="10" height="12" rx="2.5" fill="#1CB0F6" />
+    <!-- Front Light Blue Card -->
+    <rect x="9" y="4" width="10" height="12" rx="2.5" fill="#78C8FA" />
+  </g>
+</svg>

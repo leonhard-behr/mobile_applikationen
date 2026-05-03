@@ -1,0 +1,10 @@
+<svg viewBox="0 0 24 24" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ribbon Tails -->
+  <path d="M8 12V21L12 18.5L16 21V12" fill="#A56E3A" stroke="#A56E3A" stroke-width="1" stroke-linejoin="round" />
+  <!-- Outer Gold Medal -->
+  <circle cx="12" cy="10" r="8" fill="#FFC800" />
+  <!-- Inner Highlight Ring -->
+  <circle cx="12" cy="10" r="5.5" fill="#FFD733" />
+  <!-- White Center Star -->
+  <path d="M12 6.5L12.8 8.5L15 8.8L13.4 10.5L13.8 12.8L12 11.5L10.2 12.8L10.6 10.5L9 8.8L11.2 8.5L12 6.5Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0.5" stroke-linejoin="round" />
+</svg>

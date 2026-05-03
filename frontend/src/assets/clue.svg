@@ -1,0 +1,16 @@
+<svg viewBox="0 0 24 24" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Thick Handle Bottom/Shadow -->
+  <path d="M16 16L21 21" stroke="#9A82D6" stroke-width="4.5" stroke-linecap="round" />
+  
+  <!-- Thick Handle Top/Main -->
+  <path d="M15 15L20 20" stroke="#7B61FF" stroke-width="4.5" stroke-linecap="round" />
+
+  <!-- Glass Inner Fill (Light Cyan/Blue) -->
+  <circle cx="10" cy="10" r="7" fill="#D0F0FD" />
+
+  <!-- Thick Outer Frame -->
+  <circle cx="10" cy="10" r="7" stroke="#7B61FF" stroke-width="2.5" fill="none" />
+
+  <!-- Glass Reflection/Glint (The "Juicy" detail) -->
+  <path d="M6 9A4 4 0 0 1 9 6" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" fill="none" />
+</svg>

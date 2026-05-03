@@ -1,0 +1,10 @@
+<svg viewBox="0 0 24 24" width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Outer Light Cyan Diamond -->
+  <path d="M12 2L19.5 7V13.5C19.5 17.5 12 22 12 22C12 22 4.5 17.5 4.5 13.5V7L12 2Z" fill="#84D8E2" stroke="#84D8E2" stroke-width="1" stroke-linejoin="round" />
+  <!-- Inner Brighter Cyan Diamond -->
+  <path d="M12 4.5L17 8.2V13C17 15.5 12 19 12 19C12 19 7 15.5 7 13V8.2L12 4.5Z" fill="#A8F0F6" />
+  <!-- Feather Shape -->
+  <path d="M14 9.5C14 9.5 15.5 10 15.5 12C15.5 14.5 12 16.5 12 16.5C12 16.5 9 15 8.5 12.5C8 10 10.5 8 10.5 8C10.5 8 13.5 8 14 9.5Z" fill="#84D8E2" />
+  <!-- Feather Spine -->
+  <path d="M10.5 14L13.5 10" stroke="#A8F0F6" stroke-width="1.5" stroke-linecap="round" />
+</svg>
