@@ -1,14 +1,13 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls, useMotionValue } from 'framer-motion';
 import { VictoryMap } from './VictoryMap';
 import { TopoBackground } from './TopoBackground';
+import { statsApi, type JourneyStation, type ProfileStats, type Coordinate } from '../api';
 import {
-  generateMockStations,
   getPerformanceColor,
   getPerformanceShadow,
-  type DayStation,
-} from '../data/mockAchievements';
+} from '../data/performanceColors';
 
 import flameIcon from '../assets/flame.svg';
 import lightningIcon from '../assets/lightning.svg';
@@ -20,9 +19,10 @@ function getPathOffset(index: number): number {
   const amplitude = 55;
   return Math.sin((index * Math.PI) / 2) * amplitude;
 }
+
 // icon
-function StationIcon({ station }: { station: DayStation }) {
-  if (station.status === 'today') {
+function StationIcon({ status }: { status: string }) {
+  if (status === 'today') {
     return (
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -30,7 +30,7 @@ function StationIcon({ station }: { station: DayStation }) {
     );
   }
 
-  if (station.status === 'locked') {
+  if (status === 'locked' || status === 'missed') {
     return (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -47,7 +47,7 @@ function StationIcon({ station }: { station: DayStation }) {
   );
 }
 
-// performance labels 
+// performance labels
 function getPerformanceLabel(attempts: number): string {
   if (attempts <= 2) return 'Perfect!';
   if (attempts <= 4) return 'Amazing';
@@ -57,9 +57,16 @@ function getPerformanceLabel(attempts: number): string {
   return 'Tough';
 }
 
+interface SelectedStation {
+  station: JourneyStation;
+  coordinates: Coordinate[];
+}
+
 export function AchievementsPage() {
-  const stations = useMemo(() => generateMockStations(20), []);
-  const [selectedStation, setSelectedStation] = useState<DayStation | null>(null);
+  const [stations, setStations] = useState<JourneyStation[]>([]);
+  const [profile, setProfile] = useState<ProfileStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<SelectedStation | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLDivElement>(null);
   const pathContainerRef = useRef<HTMLDivElement>(null);
@@ -67,13 +74,32 @@ export function AchievementsPage() {
   const dragControls = useDragControls();
   const sheetY = useMotionValue(0);
 
+  // Fetch journey + profile from server
+  useEffect(() => {
+    (async () => {
+      try {
+        const [journeyData, profileData] = await Promise.all([
+          statsApi.journey(30),
+          statsApi.profile(),
+        ]);
+        setStations(journeyData.stations);
+        setProfile(profileData);
+      } catch (err) {
+        console.error('Failed to load journey data:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   // scroll today's station into view
   useEffect(() => {
+    if (stations.length === 0) return;
     const raf = requestAnimationFrame(() => {
       todayRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'center' });
     });
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [stations]);
 
   // measuring container for topo background
   useEffect(() => {
@@ -85,11 +111,45 @@ export function AchievementsPage() {
     }
   }, [stations]);
 
+  // handles clicking a completed station: fetches PCA coordinates
+  const handleStationClick = async (station: JourneyStation) => {
+    if (station.status !== 'completed' || !station.word) return;
+    try {
+      setSelected({ station, coordinates: [] });
+    } catch (err) {
+      console.error('Failed to load station details:', err);
+    }
+  };
+
   const completed = stations.filter((s) => s.status === 'completed');
-  const perfectCount = completed.filter((s) => s.attempts && s.attempts <= 3).length;
-  const avgAttempts = completed.length
-    ? Math.round(completed.reduce((sum, s) => sum + (s.attempts ?? 0), 0) / completed.length)
-    : 0;
+  const perfectCount = completed.filter((s) => s.attempts !== null && s.attempts <= 3).length;
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-[450px] flex items-center justify-center flex-1">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              border: '3px solid var(--color-accent)',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', fontWeight: 600 }}>
+            Loading journey…
+          </p>
+        </motion.div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[450px] flex flex-col flex-1 relative">
@@ -110,14 +170,6 @@ export function AchievementsPage() {
         }}>
           Your Journey
         </h1>
-        {/* <p style={{
-          fontSize: '14px',
-          fontWeight: 600,
-          color: 'var(--color-text-secondary)',
-          marginTop: '4px',
-        }}>
-          {completed.length} days completed */}
-        {/* </p> */}
       </motion.div>
 
       {/* stats cards */}
@@ -135,10 +187,10 @@ export function AchievementsPage() {
           zIndex: 5,
         }}
       >
-        <StatCard icon={flameIcon} value={completed.length} label="Day streak" />
-        <StatCard icon={lightningIcon} value={24830} label="Total XP" />
-        <StatCard icon={crownIcon} value={avgAttempts} label="Avg. tries" />
-        <StatCard icon={medalIcon} value={perfectCount} label="Perfect days" />
+        <StatCard icon={flameIcon} value={profile?.current_streak ?? 0} label="Day streak" />
+        <StatCard icon={lightningIcon} value={profile?.xp ?? 0} label="Total XP" />
+        <StatCard icon={crownIcon} value={profile?.avg_attempts ?? 0} label="Avg. tries" />
+        <StatCard icon={medalIcon} value={profile?.perfect_games ?? perfectCount} label="Perfect days" />
       </motion.div>
 
       {/* station path */}
@@ -175,16 +227,18 @@ export function AchievementsPage() {
           {stations.map((station, i) => {
             const offset = getPathOffset(i);
             const nextOffset = i < stations.length - 1 ? getPathOffset(i + 1) : offset;
-            const color = station.status === 'completed' && station.attempts
+            const color = station.status === 'completed' && station.attempts !== null
               ? getPerformanceColor(station.attempts)
               : station.status === 'today'
                 ? 'var(--color-accent-light)'
                 : 'var(--color-station-locked)';
-            const shadowColor = station.status === 'completed' && station.attempts
+            const shadowColor = station.status === 'completed' && station.attempts !== null
               ? getPerformanceShadow(station.attempts)
               : station.status === 'today'
                 ? 'var(--color-accent-dim)'
                 : 'rgba(0,0,0,0.25)';
+
+
 
             return (
               <motion.div
@@ -230,6 +284,8 @@ export function AchievementsPage() {
                   );
                 })()}
 
+
+
                 {/* station node */}
                 <div style={{
                   display: 'flex',
@@ -245,9 +301,9 @@ export function AchievementsPage() {
                 }}>
                   {/* circle */}
                   <motion.div
-                    onClick={() => station.status === 'completed' && station.coordinates ? setSelectedStation(station) : undefined}
-                    whileHover={station.status !== 'locked' ? { scale: 1.12, y: -2 } : undefined}
-                    whileTap={station.status !== 'locked' ? { scale: 0.95, y: 2 } : undefined}
+                    onClick={() => handleStationClick(station)}
+                    whileHover={station.status !== 'locked' && station.status !== 'missed' ? { scale: 1.12, y: -2 } : undefined}
+                    whileTap={station.status !== 'locked' && station.status !== 'missed' ? { scale: 0.95, y: 2 } : undefined}
                     style={{
                       width: '64px',
                       height: '64px',
@@ -255,7 +311,7 @@ export function AchievementsPage() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: station.status !== 'locked' ? 'pointer' : 'default',
+                      cursor: station.status === 'completed' ? 'pointer' : 'default',
                       position: 'relative',
                       background: station.status === 'today'
                         ? 'var(--color-bg)'
@@ -263,7 +319,7 @@ export function AchievementsPage() {
                       border: station.status === 'today'
                         ? `3.5px solid ${color}`
                         : 'none',
-                      color: station.status === 'locked'
+                      color: station.status === 'locked' || station.status === 'missed'
                         ? 'var(--color-text-muted)'
                         : 'white',
                       boxShadow: station.status === 'today'
@@ -271,11 +327,11 @@ export function AchievementsPage() {
                         : station.status === 'completed'
                           ? `0 5px 0 ${shadowColor}`
                           : '0 4px 0 rgba(0,0,0,0.2)',
-                      opacity: station.status === 'locked' ? 0.45 : 1,
+                      opacity: station.status === 'locked' || station.status === 'missed' ? 0.45 : 1,
                       transition: 'box-shadow 0.3s ease',
                     }}
                   >
-                    {/* pulse ring for currnt day */}
+                    {/* pulse ring for current day */}
                     {station.status === 'today' && (
                       <motion.div
                         animate={{
@@ -293,7 +349,7 @@ export function AchievementsPage() {
                       />
                     )}
 
-                    <StationIcon station={station} />
+                    <StationIcon status={station.status} />
                   </motion.div>
 
                   {/* label */}
@@ -305,10 +361,10 @@ export function AchievementsPage() {
                         ? 'var(--color-accent-light)'
                         : 'var(--color-text-primary)',
                     }}>
-                      {station.dateLabel}
+                      {station.date_label}
                     </div>
 
-                    {station.status === 'completed' && station.word && (
+                    {station.status === 'completed' && station.word && station.attempts !== null && (
                       <div style={{
                         fontSize: '11px',
                         fontWeight: 700,
@@ -320,7 +376,7 @@ export function AchievementsPage() {
                         gap: '4px',
                       }}>
                         <span style={{ opacity: 0.7 }}>
-                          {getPerformanceLabel(station.attempts!)}
+                          {getPerformanceLabel(station.attempts)}
                         </span>
                         <span style={{ opacity: 0.5 }}>·</span>
                         <span style={{ opacity: 0.6 }}>
@@ -339,6 +395,17 @@ export function AchievementsPage() {
                         Today's challenge
                       </div>
                     )}
+
+                    {station.status === 'missed' && (
+                      <div style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'var(--color-text-muted)',
+                        marginTop: '1px',
+                      }}>
+                        Missed
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -347,16 +414,18 @@ export function AchievementsPage() {
         </div>
       </div>
 
+
+
       {/* detail sheet */}
       {
         createPortal(
           <AnimatePresence>
-            {selectedStation && selectedStation.coordinates && (
+            {selected && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setSelectedStation(null)}
+                onClick={() => setSelected(null)}
                 style={{
                   position: 'absolute',
                   inset: 0,
@@ -392,7 +461,7 @@ export function AchievementsPage() {
                   }}
                   onDragEnd={(_e, info) => {
                     if (info.offset.y > 100 || info.velocity.y > 500) {
-                      setSelectedStation(null);
+                      setSelected(null);
                     }
                   }}
                 >
@@ -424,32 +493,52 @@ export function AchievementsPage() {
                       color: 'var(--color-text-primary)',
                       margin: 0,
                     }}>
-                      {selectedStation.dateLabel} — {selectedStation.word}
+                      {selected.station.date_label} — {selected.station.word}
                     </h2>
                     <p style={{
                       fontSize: '13px',
                       fontWeight: 600,
-                      color: selectedStation.attempts
-                        ? getPerformanceColor(selectedStation.attempts)
+                      color: selected.station.attempts !== null
+                        ? getPerformanceColor(selected.station.attempts)
                         : 'var(--color-text-secondary)',
                       marginTop: '4px',
                     }}>
-                      {selectedStation.attempts
-                        ? `${getPerformanceLabel(selectedStation.attempts)} · ${selectedStation.attempts} ${selectedStation.attempts === 1 ? 'try' : 'tries'}`
+                      {selected.station.attempts !== null
+                        ? `${getPerformanceLabel(selected.station.attempts)} · ${selected.station.attempts} ${selected.station.attempts === 1 ? 'try' : 'tries'}`
                         : ''}
                     </p>
                   </div>
 
-                  {/* semantic map */}
-                  <VictoryMap
-                    coordinates={selectedStation.coordinates}
-                    totalAttempts={selectedStation.attempts ?? 0}
-                    compact
-                  />
+                  {selected.coordinates.length > 0 && (
+                    <VictoryMap
+                      coordinates={selected.coordinates}
+                      totalAttempts={selected.station.attempts ?? 0}
+                      compact
+                    />
+                  )}
+
+                  {selected.coordinates.length === 0 && (
+                    <div style={{
+                      padding: '24px',
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}>
+                      <p style={{ marginBottom: '8px' }}>
+                        Solved in {selected.station.attempts} {selected.station.attempts === 1 ? 'guess' : 'guesses'}
+                      </p>
+                      {selected.station.hints_used > 0 && (
+                        <p style={{ opacity: 0.7 }}>
+                          Used {selected.station.hints_used} hint{selected.station.hints_used !== 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* close button */}
                   <motion.button
-                    onClick={() => setSelectedStation(null)}
+                    onClick={() => setSelected(null)}
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     className="duo-btn duo-btn-ghost w-full"
@@ -500,7 +589,7 @@ function StatCard({ icon, value, label }: {
           fontVariantNumeric: 'tabular-nums',
           lineHeight: 1.1,
         }}>
-          {value}
+          {value.toLocaleString()}
         </div>
         <div style={{
           fontSize: '11px',

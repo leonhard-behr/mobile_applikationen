@@ -9,13 +9,67 @@ import { VictoryMap } from './components/VictoryMap';
 import { StatsDisplay } from './components/StatsDisplay';
 import { BottomNav, type Page } from './components/BottomNav';
 import { AchievementsPage } from './components/AchievementsPage';
+import { SocialPage } from './components/SocialPage';
 import { SplashScreen } from './components/SplashScreen';
 import { GameTopoBackground } from './components/GameTopoBackground';
 import { TutorialOverlay } from './components/TutorialOverlay';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthPage } from './components/AuthPage';
 
 
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { user, loading: authLoading } = useAuth();
+
+  // auth loading state
+  if (authLoading) {
+    return (
+      <div
+        className="w-full min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--color-bg)' }}
+      >
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              border: '3px solid var(--color-accent)',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', fontWeight: 600 }}>
+            Loading…
+          </p>
+        </motion.div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // not authenticated -> show login/register
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  // authenticated -> show game
+  return <AuthenticatedApp />;
+}
+
+function AuthenticatedApp() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [showSplash, setShowSplash] = useState(true);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -43,7 +97,7 @@ export default function App() {
       <div className="w-full h-full flex flex-col relative overflow-hidden">
         <div className="flex-1 w-full overflow-y-auto overflow-x-hidden relative flex flex-col">
           <AnimatePresence mode="wait">
-            {currentPage === 'home' ? (
+            {currentPage === 'home' && (
               <motion.div
                 key="home"
                 initial={{ opacity: 0, x: -20 }}
@@ -58,7 +112,8 @@ export default function App() {
                   bestRank={bestRank}
                 />
               </motion.div>
-            ) : (
+            )}
+            {currentPage === 'achievements' && (
               <motion.div
                 key="achievements"
                 initial={{ opacity: 0, x: 20 }}
@@ -68,6 +123,18 @@ export default function App() {
                 className="flex-1 flex justify-center"
               >
                 <AchievementsPage />
+              </motion.div>
+            )}
+            {currentPage === 'social' && (
+              <motion.div
+                key="social"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.25 }}
+                className="flex-1 flex justify-center"
+              >
+                <SocialPage />
               </motion.div>
             )}
           </AnimatePresence>

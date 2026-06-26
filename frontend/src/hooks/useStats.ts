@@ -1,63 +1,53 @@
-import { useState, useEffect } from 'react';
+/**
+ * useStats hook: game statistics.
+ * Fetches user profile stats from the backend API.
+ */
 
-interface DayStat {
-  date: string;
-  attempts: number;
-  won: boolean;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { statsApi } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 
-interface Stats {
-  history: DayStat[];
+export interface Stats {
   currentStreak: number;
   bestStreak: number;
   gamesPlayed: number;
   gamesWon: number;
 }
 
-const STATS_KEY = 'semantic-steps-stats';
-
-function loadStats(): Stats {
-  try {
-    const raw = localStorage.getItem(STATS_KEY);
-    if (!raw) return { history: [], currentStreak: 0, bestStreak: 0, gamesPlayed: 0, gamesWon: 0 };
-    return JSON.parse(raw);
-  } catch {
-    return { history: [], currentStreak: 0, bestStreak: 0, gamesPlayed: 0, gamesWon: 0 };
-  }
-}
-
-function saveStats(stats: Stats) {
-  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
-}
-
 export function useStats() {
-  const [stats, setStats] = useState<Stats>(loadStats);
+  const { user } = useAuth();
+  const [stats, setStats] = useState<Stats>({
+    currentStreak: 0,
+    bestStreak: 0,
+    gamesPlayed: 0,
+    gamesWon: 0,
+  });
+
+  const fetchStats = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await statsApi.profile();
+      setStats({
+        currentStreak: data.current_streak,
+        bestStreak: data.best_streak,
+        gamesPlayed: data.total_games,
+        gamesWon: data.won_games,
+      });
+    } catch (err) {
+      console.error('Failed to fetch stats', err);
+    }
+  }, [user]);
 
   useEffect(() => {
-    saveStats(stats);
-  }, [stats]);
+    fetchStats();
+  }, [fetchStats]);
 
-  const recordWin = (today: string, attempts: number) => {
-    setStats((prev) => {
-      // avoiidning duplicate entries for the same day
-      if (prev.history.some((h) => h.date === today)) return prev;
-
-      const newEntry: DayStat = { date: today, attempts, won: true };
-      const newHistory = [...prev.history, newEntry];
-
-      // calc streak
-      const newStreak = prev.currentStreak + 1;
-      const newBest = Math.max(prev.bestStreak, newStreak);
-
-      return {
-        history: newHistory,
-        currentStreak: newStreak,
-        bestStreak: newBest,
-        gamesPlayed: prev.gamesPlayed + 1,
-        gamesWon: prev.gamesWon + 1,
-      };
-    });
-  };
+  const recordWin = useCallback((_today: string, _attempts: number) => {
+    // The server inherently records the win when the game session is completed.
+    // We just refetch the updated stats from the backend.
+    setTimeout(fetchStats, 500);
+  }, [fetchStats]);
 
   return { stats, recordWin };
 }
+

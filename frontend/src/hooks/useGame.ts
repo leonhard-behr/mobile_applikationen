@@ -1,3 +1,11 @@
+/**
+ * useGame hook: game state management
+ * 
+ * server is the single source of truth. no localStorage
+ * 
+ * on mount, calls /api/game/start which either creates a new session or returns the existing one with all guesses/hints restored
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { api, type GuessData, type Coordinate } from '../api';
 
@@ -30,36 +38,10 @@ interface GameState {
   latestSimilarity: number;
   totalRanked: number;
   letters: string[];
-  gameId: string | undefined;  // undefined = daily game, string = freeplay (freeplay is currently deactivated)
+  gameId: string | undefined;
 }
 
-const STORAGE_KEY = 'semantic-steps-game';
 const MAX_HINTS = 3;
-
-interface SavedGame {
-  today: string;
-  guesses: GuessEntry[];
-  won: boolean;
-  hints: HintEntry[];
-  hintsUsed: number;
-  penaltyAttempts: number;
-}
-
-function loadSavedGame(today: string): SavedGame | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const saved: SavedGame = JSON.parse(raw);
-    if (saved.today !== today) return null;
-    return saved;
-  } catch {
-    return null;
-  }
-}
-
-function saveGame(state: SavedGame) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
 
 export function useGame() {
   const [state, setState] = useState<GameState>({
@@ -80,38 +62,63 @@ export function useGame() {
     gameId: undefined,
   });
 
-  // innit game
+
+
+
+
+
+
+
+  // init game: server handles resume
   useEffect(() => {
     (async () => {
       try {
         const start = await api.start();
-        const saved = loadSavedGame(start.today);
 
-        if (saved) {
+        // server returned existing guesses (resume)
+        if (start.guesses && start.guesses.length > 0) {
+          const restoredGuesses: GuessEntry[] = start.guesses.map((g) => ({
+            word: g.word,
+            similarity: g.similarity,
+            scaled_similarity: g.scaled_similarity,
+            rank: g.rank,
+            is_correct: g.is_correct,
+          }));
+
+          const restoredHints: HintEntry[] = (start.hints || []).map((h) => ({
+            hint_number: h.hint_number,
+            rank: h.rank,
+            word: h.word,
+          }));
+
           setState((s) => ({
             ...s,
-            guesses: saved.guesses,
-            won: saved.won,
-            hints: saved.hints || [],
-            hintsUsed: saved.hintsUsed || 0,
-            penaltyAttempts: saved.penaltyAttempts,
+            guesses: restoredGuesses,
+            won: start.won,
+            hints: restoredHints,
+            hintsUsed: start.hints_used || 0,
+            penaltyAttempts: start.penalty_attempts || 0,
             anchorWord: start.anchor_word,
             anchorRank: start.anchor_rank,
             today: start.today,
             loading: false,
             totalRanked: start.total_ranked,
             letters: start.letters || [],
-            latestSimilarity: saved.guesses.length > 0
-              ? saved.guesses[saved.guesses.length - 1].scaled_similarity ?? saved.guesses[saved.guesses.length - 1].similarity
+            gameId: start.session_id || undefined,
+            latestSimilarity: restoredGuesses.length > 0
+              ? restoredGuesses[restoredGuesses.length - 1].scaled_similarity
               : start.anchor_similarity,
           }));
 
-          if (saved.won) {
-            const allWords = saved.guesses.map((g) => g.word);
-            const victoryData = await api.victory(allWords);
+          // if already won, fetches victory coordinates
+          if (start.won) {
+            const allWords = restoredGuesses.map((g) => g.word);
+            const victoryData = await api.victory(allWords, start.session_id || undefined);
             setState((s) => ({ ...s, coordinates: victoryData.coordinates }));
           }
         } else {
+
+          // new game: seed with anchor as first guess
           const anchorEntry: GuessEntry = {
             word: start.anchor_word,
             similarity: start.anchor_similarity,
@@ -119,10 +126,9 @@ export function useGame() {
             rank: start.anchor_rank,
             is_correct: false,
           };
-          const initialGuesses = [anchorEntry];
           setState((s) => ({
             ...s,
-            guesses: initialGuesses,
+            guesses: [anchorEntry],
             anchorWord: start.anchor_word,
             anchorRank: start.anchor_rank,
             today: start.today,
@@ -130,16 +136,8 @@ export function useGame() {
             totalRanked: start.total_ranked,
             latestSimilarity: start.anchor_similarity,
             letters: start.letters || [],
+            gameId: start.session_id || undefined,
           }));
-
-          saveGame({
-            today: start.today,
-            guesses: initialGuesses,
-            won: false,
-            hints: [],
-            hintsUsed: 0,
-            penaltyAttempts: 0,
-          });
         }
       } catch (err) {
         setState((s) => ({
@@ -150,6 +148,11 @@ export function useGame() {
       }
     })();
   }, []);
+
+
+
+
+
 
   const submitGuess = useCallback(async (word: string) => {
     const trimmed = word.trim().toLowerCase();
@@ -183,15 +186,6 @@ export function useGame() {
         letters: result.letters || s.letters,
       }));
 
-      saveGame({
-        today: state.today,
-        guesses: newGuesses,
-        won: result.is_correct,
-        hints: state.hints,
-        hintsUsed: state.hintsUsed,
-        penaltyAttempts: state.penaltyAttempts,
-      });
-
       if (result.is_correct) {
         const allWords = newGuesses.map((g) => g.word);
         const victoryData = await api.victory(allWords, state.gameId);
@@ -204,7 +198,11 @@ export function useGame() {
         error: err instanceof Error ? err.message : 'Guess failed',
       }));
     }
-  }, [state.guesses, state.today, state.hints, state.hintsUsed, state.penaltyAttempts, state.gameId]);
+  }, [state.guesses, state.gameId]);
+
+
+
+
 
   const requestHint = useCallback(async () => {
     const nextHint = state.hintsUsed + 1;
@@ -212,7 +210,6 @@ export function useGame() {
 
     setState((s) => ({ ...s, loading: true }));
     try {
-      // calculating current best rank from guesses and hints
       let currentBestRank: number | null = null;
       const allRanks = [
         ...state.guesses.map(g => g.rank).filter(r => r !== null && r > 0),
@@ -225,23 +222,14 @@ export function useGame() {
       const data = await api.hint(nextHint, currentBestRank, state.gameId);
       const newHints = [...state.hints, { hint_number: data.hint_number, rank: data.rank, word: data.word }];
       const newPenalty = state.penaltyAttempts + 1;
-      const newHintsUsed = nextHint;
 
       setState((s) => ({
         ...s,
         hints: newHints,
-        hintsUsed: newHintsUsed,
+        hintsUsed: nextHint,
         penaltyAttempts: newPenalty,
         loading: false,
       }));
-      saveGame({
-        today: state.today,
-        guesses: state.guesses,
-        won: state.won,
-        hints: newHints,
-        hintsUsed: newHintsUsed,
-        penaltyAttempts: newPenalty,
-      });
     } catch (err) {
       setState((s) => ({
         ...s,
@@ -249,7 +237,12 @@ export function useGame() {
         error: err instanceof Error ? err.message : 'Hint failed',
       }));
     }
-  }, [state.hintsUsed, state.hints, state.penaltyAttempts, state.today, state.guesses, state.won]);
+  }, [state.hintsUsed, state.hints, state.penaltyAttempts, state.guesses, state.gameId]);
+
+
+
+
+
 
   const startNewGame = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }));
@@ -262,11 +255,8 @@ export function useGame() {
         rank: data.anchor_rank,
         is_correct: false,
       };
-      const initialGuesses = [anchorEntry];
-      const newToday = `freeplay-${data.game_id}`;
-      localStorage.removeItem(STORAGE_KEY);
       setState({
-        guesses: initialGuesses,
+        guesses: [anchorEntry],
         won: false,
         loading: false,
         error: null,
@@ -275,21 +265,12 @@ export function useGame() {
         hints: [],
         hintsUsed: 0,
         penaltyAttempts: 0,
-        today: newToday,
+        today: data.today,
         coordinates: null,
         latestSimilarity: data.anchor_similarity,
         totalRanked: data.total_ranked,
         letters: data.letters || [],
         gameId: data.game_id,
-      });
-
-      saveGame({
-        today: newToday,
-        guesses: initialGuesses,
-        won: false,
-        hints: [],
-        hintsUsed: 0,
-        penaltyAttempts: 0,
       });
     } catch (err) {
       setState((s) => ({
@@ -299,6 +280,8 @@ export function useGame() {
       }));
     }
   }, []);
+
+
 
   const totalAttempts = state.guesses.length - 1 + state.penaltyAttempts; // -1 for anchor
 
