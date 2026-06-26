@@ -83,14 +83,8 @@ app = FastAPI(title="API", lifespan=lifespan)
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
-# TODO: 
-# remove localhost url from prod
-
-frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+frontend_url = os.environ.get("FRONTEND_URL", "https://leonhard-behr.de")
 origins = [
-    "http://localhost",
-    "http://localhost:80",
-    "http://localhost:5173",
     "https://leonhard-behr.de",
     "https://www.leonhard-behr.de",
     frontend_url
