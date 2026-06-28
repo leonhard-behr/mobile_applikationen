@@ -90,7 +90,7 @@ def _cache_get_batch(words: list[str]) -> dict[str, np.ndarray]:
 
 
 
-def _chache_put_batch(items: dict[str, np.ndarray]) -> None:
+def _cache_put_batch(items: dict[str, np.ndarray]) -> None:
     """stores multiple vectors in the cache"""
     db = _get_db()
     db.executemany(
@@ -175,7 +175,7 @@ def get_embeddings_batch(words: list[str]) -> dict[str, np.ndarray]:
             for word, vec in zip(batch, vecs):
                 new_vectors[word] = vec
 
-        _chache_put_batch(new_vectors)
+        _cache_put_batch(new_vectors)
         cached.update(new_vectors)
 
     return cached
