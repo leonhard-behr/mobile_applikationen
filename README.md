@@ -2,6 +2,9 @@
 
 Projektarbeit im Modul *KI in mobilen Applikationen* an der Hochschule für angewandte Wissenschaften Ansbach.
 
+**Live-Demo:** [leonhard-behr.de](https://leonhard-behr.de) | **API-Basis:** `https://api.leonhard-behr.de`
+
+
 ### Architektur
 
 ![](architecture_mobile_applikationen_2_2.drawio.png)
@@ -250,7 +253,51 @@ Nginx übernimmt TLS-Terminierung, Gzip-Komprimierung und das Ausliefern statisc
 
 
 
----
+
+### Anforderungen & Wertschöpfung
+
+#### Funktionale Anforderungen
+
+- **Registrierung & Authentifizierung:** Registrierung, Login, Profilverwaltung und Dual-Token-Sicherungsverfahren (JWT + HttpOnly Cookie).
+
+- **Spielmodi:** Tägliche Herausforderung (einheitliches Wort pro Tag) sowie freier Spielmodus (freier Spielmodus wird aktuell im Frontend nicht angezeigt).
+
+- **Sofortiges Feedback:** Vergleiche durch semantischer Nähe und Ranks.
+
+- **Hinweise:** Schrittweise Buchstabeneaufdeckung (jeweils nach 3 Versuchen) sowie maximal 3 (adaptive) Hinweise pro Spiel.
+
+- **"Semantic Journey" Visualisierung:** Grafische Darstellung des semantischen Verlaufs nach erfolgreichem Spielabschluss.
+
+- **Soziale Interaktion:** Freundschafts-System, Aktivitätsfeed und Bestenlisten (Tages-Score & Streak-Bestenliste).
+
+
+
+
+
+#### Nicht-Funktionale Anforderungen (NFA)
+
+- **Sicherheit:** Schutz gegen Brute-Force/DoS durch Rate Limiting (Middleware im Backend, Nginx im Reverse-Proxy). Sichere Speicherung von Passwörtern (bcrypt) und Schutz vor Session-Hijacking (Secure/HttpOnly Cookies).
+
+- **Latenz & Kostenkontrolle:** Minimierung der API-Antwortzeiten sowie Vermeidung unnötiger API-Kosten durch lokales Caching.
+
+- **Skalierbarkeit & Isolation:** Asynchrone Bearbeitung von Anfragen im Backend; einfaches Deployment via Docker.
+
+
+
+
+#### KI-Wertschöpfung
+
+Das Finden von Wörtern durch semantische Ähnlichkeit anstelle von reinem Buchstabenabgleich ist die Kernidee des Spiels. Verwendet werden Embeddings zum Vergleich von Wörtern:
+
+1. **Embeddings:** Jedes geratene Wort wird über die OpenAI API (`text-embedding-3-small`) in einen 1536-dimensionalen Vektor übersetzt.
+
+2. **Cosine Similarity:** Über die Cosine Similarity zum Zielvektor wird berechnet, wie nah der Versuch dem Lösungswort ist. 
+
+3. **Reduktion & Darstellung:** Nach dem richtigen Raten des Zielworts berechnet das Backend mittels PCA eine 2D darstellung der 1536D Embeddings. 
+
+4. **Caching (SQLite):** Um Token Kosten zu minimieren und Antwortzeiten bei wiederholten Wörtern zu senken, puffert SQLite die Embeddings dauerhaft auf Disk.
+
+
 
 ### Tests
 
