@@ -114,13 +114,12 @@ class AuthService:
 
 
 
-    async def update_profile(self, user: User, display_name: str | None = None, avatar_url: str | None = None, is_public: bool | None = None,) -> User:
+    async def update_profile(self, user: User, display_name: str | None = None, is_public: bool | None = None,) -> User:
         """updates a users profile. raises UserNotFound if not found."""
         
         user = await self.repo.update_profile(
             user,
             display_name=display_name,
-            avatar_url=avatar_url,
             is_public=is_public,
         )
         await self.db.commit()

@@ -64,7 +64,6 @@ def test_update_me_profile(api_client, unique_id):
     headers = {"Authorization": f"Bearer {token}"}
     update_payload = {
         "display_name": "Updated Name",
-        "avatar_url": "http://example.com/avatar.jpg",
         "is_public": False
     }
     response = api_client.patch("/api/auth/me", json=update_payload, headers=headers)

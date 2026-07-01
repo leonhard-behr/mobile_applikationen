@@ -34,7 +34,6 @@ def upgrade() -> None:
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('password_hash', sa.String(length=255), nullable=False),
     sa.Column('display_name', sa.String(length=100), nullable=True),
-    sa.Column('avatar_url', sa.String(length=500), nullable=True),
     sa.Column('xp', sa.Integer(), nullable=False),
     sa.Column('level', sa.Integer(), nullable=False),
     sa.Column('current_streak', sa.Integer(), nullable=False),

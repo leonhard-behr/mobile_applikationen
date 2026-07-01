@@ -65,12 +65,10 @@ class UserRepository:
 
 
 
-    async def update_profile(self, user: User, display_name: str | None = None, avatar_url: str | None = None, is_public: bool | None = None,) -> User:
+    async def update_profile(self, user: User, display_name: str | None = None, is_public: bool | None = None,) -> User:
         """updates mutable profile fields"""
         if display_name is not None:
             user.display_name = display_name
-        if avatar_url is not None:
-            user.avatar_url = avatar_url
         if is_public is not None:
             user.is_public = is_public
         await self.db.flush()

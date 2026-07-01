@@ -19,7 +19,6 @@ class LoginRequest(BaseModel):
 
 class UpdateProfileRequest(BaseModel):
     display_name: str | None = Field(None, max_length=100)
-    avatar_url: str | None = Field(None, max_length=500)
     is_public: bool | None = None
 
 
@@ -33,7 +32,6 @@ class UserResponse(BaseModel):
     username: str
     email: str
     display_name: str | None
-    avatar_url: str | None
     xp: int
     level: int
     current_streak: int

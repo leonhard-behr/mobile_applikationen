@@ -119,7 +119,6 @@ async def update_me(req: UpdateProfileRequest, user: User = Depends(get_current_
     updated = await svc.update_profile(
         user,
         display_name=req.display_name,
-        avatar_url=req.avatar_url,
         is_public=req.is_public,
     )
     return updated

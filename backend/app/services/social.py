@@ -128,7 +128,6 @@ class SocialService:
                 "id": str(u.id),
                 "username": u.username,
                 "display_name": u.display_name,
-                "avatar_url": u.avatar_url,
                 "xp": u.xp,
                 "level": u.level,
                 "current_streak": u.current_streak,
@@ -147,7 +146,6 @@ class SocialService:
                 "sender_id": str(u.id),
                 "username": u.username,
                 "display_name": u.display_name,
-                "avatar_url": u.avatar_url,
                 "created_at": f.created_at.isoformat(),
             })
         
@@ -166,7 +164,6 @@ class SocialService:
                 "addressee_id": str(u.id),
                 "username": u.username,
                 "display_name": u.display_name,
-                "avatar_url": u.avatar_url,
                 "created_at": f.created_at.isoformat(),
             })
 
@@ -190,7 +187,6 @@ class SocialService:
             formatted_feed.append({
                 "username": u.username,
                 "display_name": u.display_name,
-                "avatar_url": u.avatar_url,
                 "day": g.day.isoformat(),
                 "target_word": g.target_word,
                 "total_attempts": g.total_attempts,
@@ -220,7 +216,6 @@ class SocialService:
             {
                 "username": u.username,
                 "display_name": u.display_name,
-                "avatar_url": u.avatar_url,
                 "total_attempts": g.total_attempts,
                 "hints_used": g.hints_used_count,
                 "completed_at": g.completed_at.isoformat() if g.completed_at else None,
@@ -246,7 +241,6 @@ class SocialService:
             {
                 "username": u.username,
                 "display_name": u.display_name,
-                "avatar_url": u.avatar_url,
                 "current_streak": u.current_streak,
                 "best_streak": u.best_streak,
                 "level": u.level,
@@ -290,7 +284,6 @@ class SocialService:
         return {
             "username": user.username,
             "display_name": user.display_name,
-            "avatar_url": user.avatar_url,
             "xp": user.xp,
             "level": user.level,
             "current_streak": user.current_streak,
