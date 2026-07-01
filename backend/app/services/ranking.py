@@ -1,4 +1,4 @@
-"""Ranking service: in-memory cache of word similarity rankings per target word"""
+# ranking service: in-memory cache of word similarity rankings per target word
 
 import asyncio
 import logging
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CachedRankings:
-    """Pre-computed data for one target word"""
+    # pre-computed data for one target word
     word: str
     rankings: list[tuple[str, float]] = field(default_factory=list)
     rank_lookup: dict[str, int] = field(default_factory=dict)
@@ -28,13 +28,15 @@ class CachedRankings:
     anchor_rank: int | None = None
 
 
+# THIS SECTION WAS PARTIALLY CREATED WITH GENERATIVE AI
 def _compute_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
-    """cosine similarity between two vectors (0-100 scale)"""
+    # cosine similarity between two vectors (0-100 scale)
     return round(float(1 - cosine(vec_a, vec_b)) * 100, 2)
 
 
+# THIS SECTION WAS PARTIALLY CREATED WITH GENERATIVE AI
 def scale_similarity(raw_sim: float, anchor_sim: float, max_sim: float) -> float:
-    """nonlinear scaling"""
+    # nonlinear scaling
     if max_sim <= anchor_sim:
         return raw_sim
 
@@ -50,22 +52,22 @@ def scale_similarity(raw_sim: float, anchor_sim: float, max_sim: float) -> float
 
 
 class RankingService:
-    """Singleton service managing pre-computed similarity rankings
-
-    Rankings are cached in memory keyed by the target word, so multiple
-    users playing the same daily word share the same rankings."""
+    # singleton service managing pre-computed similarity rankings
+    #
+    # rankings are cached in memory keyed by the target word, so multiple
+    # users playing the same daily word share the same rankings
 
     def __init__(self):
         self._cache: dict[str, CachedRankings] = {}
 
 
     def get_cached(self, word: str) -> CachedRankings | None:
-        """gets cached rankings if available"""
+        # gets cached rankings if available
         return self._cache.get(word)
 
 
     async def ensure_rankings(self, target_word: str) -> CachedRankings:
-        """gets or computes rankings for a target word."""
+        # gets or computes rankings for a target word
         if target_word in self._cache:
             return self._cache[target_word]
 
@@ -75,11 +77,10 @@ class RankingService:
 
 
     def _compute_sync(self, target_word: str) -> CachedRankings:
-        """heavy computation, runs in a thread. 
-            1. gets target vector
-            2. computes similarity for all common words
-            3. selects anchor candidate closest to 35%
-        """
+        # heavy computation, runs in a thread. 
+        # 1. gets target vector
+        # 2. computes similarity for all common words
+        # 3. selects anchor candidate closest to 35%
         cr = CachedRankings(word=target_word)
 
         cr.target_vector = embedding.get_embedding(target_word)
@@ -100,7 +101,7 @@ class RankingService:
         cr.rank_lookup = {w: i + 1 for i, (w, _) in enumerate(sims)}
         cr.max_similarity = sims[0][1] if sims else 100.0
 
-        # ANCHOR AT 35% SIMILARITY
+        # anchor at 35% similarity
         anchor_vecs = embedding.get_embeddings_batch(ANCHOR_CANDIDATES)
         best_word, best_sim, best_diff = ANCHOR_CANDIDATES[0], 0.0, float("inf")
         for cand in ANCHOR_CANDIDATES:
@@ -117,12 +118,12 @@ class RankingService:
         cr.anchor_rank = cr.rank_lookup.get(best_word)
 
 
-        logger.info(f"Rankings computed for '{target_word}': {len(cr.rankings)} words, anchor='{cr.anchor_word}' ({cr.anchor_similarity:.1f}%, rank={cr.anchor_rank})")
+        logger.info(f"rankings computed for '{target_word}': {len(cr.rankings)} words, anchor='{cr.anchor_word}' ({cr.anchor_similarity:.1f}%, rank={cr.anchor_rank})")
         return cr
 
 
     def compute_rank_for_guess(self, cr: CachedRankings, word: str, raw_sim: float) -> int | None:
-        """get the rank for a guessed word. if the word is in the pre-computed list, returns its rank. otherwise, interpolates where it would fall."""
+        # get the rank for a guessed word. if the word is in the pre-computed list, returns its rank. otherwise, interpolates where it would fall.
         rank = cr.rank_lookup.get(word)
         if rank is not None:
             return rank
@@ -135,3 +136,4 @@ class RankingService:
 
 
 ranking_service = RankingService()
+
