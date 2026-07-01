@@ -18,7 +18,7 @@ class Achievement(Base):
 
     __tablename__ = "achievements"
     # EACH ACHIEVEMENT CAN ONLY BE EARNED ONCE BY EACH USER
-    __table_args__ = (UniqueConstraint("user_id", "achievement_key", name="uq_user_achievement"))
+    __table_args__ = (UniqueConstraint("user_id", "achievement_key", name="uq_user_achievement"),)
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
 

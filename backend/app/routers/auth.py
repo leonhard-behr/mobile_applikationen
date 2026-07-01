@@ -29,12 +29,12 @@ REFRESH_COOKIE_MAX_AGE = settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
 
 
 def _set_refresh_cookie(response: Response, token: str) -> None:
-    """sets the refresh token as an HttpOnly cookie"""
+    # sets the refresh token as an httponly cookie
     response.set_cookie(
         key=REFRESH_COOKIE_KEY,
         value=token,
         httponly=True,
-        secure=True,        # TODO: set to True for production!!!
+        secure=True,        # secure cookie for prod
         samesite="lax",
         max_age=REFRESH_COOKIE_MAX_AGE,
         path="/api/auth",
@@ -43,11 +43,12 @@ def _set_refresh_cookie(response: Response, token: str) -> None:
 
 
 def _clear_refresh_cookie(response: Response) -> None:
-    """deletes the refresh token cookie"""
+    # deletes the refresh token cookie
     response.delete_cookie(
         key=REFRESH_COOKIE_KEY,
         path="/api/auth",
     )
+
 
 
 

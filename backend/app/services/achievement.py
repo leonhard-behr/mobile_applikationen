@@ -1,6 +1,5 @@
-"""Achievement engine: evaluates and awards achievements after game events.
-Achievement definitions are stored in ACHIEVEMENT_DEFS.
-"""
+# achievement engine: evaluates and awards achievements after game events.
+# achievement definitions are stored in achievement_defs.
 
 import logging
 from datetime import date, datetime, timezone
@@ -16,111 +15,111 @@ from app.repositories.user import UserRepository
 
 logger = logging.getLogger(__name__)
 
-# TODO: ADD NEW ACHIEVEMENTS
-# - FIRST FRIEND REQUEST
-# - 10 FRIEND REQUESTS
+# todo: add new achievements
+# - first friend request
+# - 10 friend requests
 
 ACHIEVEMENT_DEFS: list[dict] = [
     {
         "key": "first_win",
         "name": "First Steps",
-        "description": "Win your first game",
+        "description": "win your first game",
         "xp": 50,
     },
     {
         "key": "streak_3",
         "name": "Hat Trick",
-        "description": "Win 3 days in a row",
+        "description": "win 3 days in a row",
         "xp": 100,
     },
     {
         "key": "streak_7",
         "name": "Week Warrior",
-        "description": "Win 7 days in a row",
+        "description": "win 7 days in a row",
         "xp": 250,
     },
     {
         "key": "streak_14",
         "name": "Fortnight Focus",
-        "description": "Win 14 days in a row",
+        "description": "win 14 days in a row",
         "xp": 500,
     },
     {
         "key": "streak_30",
         "name": "Monthly Master",
-        "description": "Win 30 days in a row",
+        "description": "win 30 days in a row",
         "xp": 1000,
     },
     {
         "key": "under_3",
         "name": "Sharp Mind",
-        "description": "Win a game in 3 or fewer guesses",
+        "description": "win a game in 3 or fewer guesses",
         "xp": 150,
     },
     {
         "key": "under_5",
         "name": "Quick Thinker",
-        "description": "Win a game in 5 or fewer guesses",
+        "description": "win a game in 5 or fewer guesses",
         "xp": 75,
     },
     {
         "key": "no_hints",
         "name": "Solo Explorer",
-        "description": "Win a game without using any hints",
+        "description": "win a game without using any hints",
         "xp": 100,
     },
     {
         "key": "games_10",
         "name": "Warming Up",
-        "description": "Play 10 games",
+        "description": "win 10 games",
         "xp": 100,
     },
     {
         "key": "games_50",
         "name": "Dedicated Player",
-        "description": "Play 50 games",
+        "description": "win 50 games",
         "xp": 300,
     },
     {
         "key": "games_100",
         "name": "Century Club",
-        "description": "Play 100 games",
+        "description": "win 100 games",
         "xp": 500,
     },
     {
         "key": "perfect_3",
         "name": "Triple Perfection",
-        "description": "Get 3 perfect games (<=3 guesses)",
+        "description": "get 3 perfect games (<=3 guesses)",
         "xp": 200,
     },
     {
         "key": "perfect_10",
         "name": "Precision Expert",
-        "description": "Get 10 perfect games (<=3 guesses)",
+        "description": "get 10 perfect games (<=3 guesses)",
         "xp": 500,
     },
 ]
 
 
-XP_BASE_WIN = 25             # base XP for any win
-XP_SPEED_BONUS_MAX = 50      # bonus XP for fast wins (<=3 guesses)
-XP_NO_HINT_BONUS = 15        # bonus XP for no hints used
-XP_STREAK_MULTIPLIER = 5     # bonus XP per day of streak
+XP_BASE_WIN = 25             # base xp for any win
+XP_SPEED_BONUS_MAX = 50      # bonus xp for fast wins (<=3 guesses)
+XP_NO_HINT_BONUS = 15        # bonus xp for no hints used
+XP_STREAK_MULTIPLIER = 5     # bonus xp per day of streak
 
 
 class AchievementEngine:
-    """Evaluates and awards achievements and XP after game events"""
+    # evaluates and awards achievements and xp after game events
 
     def __init__(self, db: AsyncSession):
         self.db = db
         self.user_repo = UserRepository(db)
 
     async def process_win(self, user_id: UUID, total_attempts: int, hints_used: int) -> dict:
-        """called after a game is won
-            - streak update
-            - xp calculation and award
-            - achievement evaluation
-        returns a summary dict with XP earned and achievements unlocked"""
+        # called after a game is won
+        # - streak update
+        # - xp calculation and award
+        # - achievement evaluation
+        # returns a summary dict with xp earned and achievements unlocked
 
         user = await self.user_repo.get_by_id(user_id)
         if user is None:
@@ -131,10 +130,10 @@ class AchievementEngine:
         best_streak = max(user.best_streak, new_streak)
         await self.user_repo.update_streak(user, new_streak, best_streak)
 
-        # calculate XP
+        # calculate xp
         xp = XP_BASE_WIN
         
-        # speed bonus (linear: 50 XP at 1 guess, 0 at 10+)
+        # speed bonus (linear: 50 xp at 1 guess, 0 at 10+)
         if total_attempts <= 10:
             xp += max(0, int(XP_SPEED_BONUS_MAX * (1 - (total_attempts - 1) / 9)))
         
@@ -150,16 +149,16 @@ class AchievementEngine:
             user_id, total_attempts, hints_used, new_streak
         )
 
-        # add achievement XP
+        # add achievement xp
         achievement_xp = sum(a["xp_reward"] for a in newly_earned)
         total_xp = xp + achievement_xp
 
-        # award XP
+        # award xp
         await self.user_repo.add_xp(user, total_xp)
         await self.db.commit()
 
         logger.info(
-            f"Win processed: user={user_id}, streak={new_streak}, "
+            f"win processed: user={user_id}, streak={new_streak}, "
             f"xp={total_xp} (base={xp}, achievements={achievement_xp}), "
             f"new_achievements={[a['key'] for a in newly_earned]}"
         )
@@ -175,7 +174,7 @@ class AchievementEngine:
 
 
     async def get_user_achievements(self, user_id: UUID) -> list[dict]:
-        """gets all achievements earned by a user"""
+        # gets all achievements earned by a user
 
         result = await self.db.execute(
             select(Achievement)
@@ -199,8 +198,9 @@ class AchievementEngine:
 
 
 
+
     async def get_all_definitions(self, user_id: UUID) -> list[dict]:
-        """returns all achievement definitions with earned status"""
+        # returns all achievement definitions with earned status
         
         earned_keys = set()
         result = await self.db.execute(
@@ -317,7 +317,7 @@ class AchievementEngine:
                     "description": defn["description"],
                     "xp_reward": defn["xp"],
                 })
-                logger.info(f"Achievement unlocked: '{key}' for user={user_id}")
+                logger.info(f"achievement unlocked: '{key}' for user={user_id}")
 
         if newly_earned:
             await self.db.flush()
@@ -345,3 +345,4 @@ class AchievementEngine:
             )
         )
         return result.scalar() or 0
+

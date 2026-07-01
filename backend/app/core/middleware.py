@@ -1,11 +1,11 @@
-# custom middlewares for FastAPI
-# CorrelationIdMiddleware: generates and injects a unique correlation ID into the request header and logs, makes end-to-end request tracing possible
-# RateLimitMiddleware: Redis-backed rate limiting middleware using a sliding window algorithm
+# custom middlewares for fastapi
+# correlationidmiddleware: generates and injects a unique correlation id into the request header and logs, makes end-to-end request tracing possible
+# ratelimitmiddleware: redis-backed rate limiting middleware using a sliding window algorithm
 
 import time
 import uuid
 import logging
-from fastapi import Request, Response, status
+from fastapi import Request, Response, status, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.infra.redis import redis_client
@@ -16,9 +16,7 @@ RATE_LIMIT_REQUESTS = 100
 RATE_LIMIT_WINDOW_SECONDS = 60
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    """
-    CorrelationIdMiddleware: generates and injects a unique correlation ID into the request header and logs, makes end-to-end request tracing possible
-    """
+    # correlationidmiddleware: generates and injects a unique correlation id into the request header and logs, makes end-to-end request tracing possible
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # gen correlation id if not provided by client
@@ -45,21 +43,20 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """
-    Redis-backed rate limiting middleware using a sliding window algorithm.
-    """
+    # redis-backed rate limiting middleware using a sliding window algorithm
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        if not request.url.path.startswith("/api/"):
+        if not request.url.path.startswith("/api/") or request.url.path == "/api/health":
             return await call_next(request)
 
-        # client IP
+        # client ip
         client_ip = request.client.host if request.client else "unknown_ip"
         
         if not redis_client._enabled or not redis_client._redis:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Rate limiting service is unavailable.",
+                content={"detail": "Service temporarily unavailable. Please try again later."},
+                headers={"Retry-After": "30"}
             )
 
         now = time.time()
@@ -90,9 +87,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             logger.error(f"Rate limiting failure: {e}")
 
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Rate limiting service is unavailable.",
+                content={"detail": "Service temporarily unavailable. Please try again later."},
+                headers={"Retry-After": "30"}
             )
             
         return await call_next(request)
+

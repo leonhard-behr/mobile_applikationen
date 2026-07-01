@@ -1,5 +1,5 @@
-"""Game models:
-DailyWord, GameSession, Guess, HintUsed"""
+# game models:
+# dailyword, gamesession, guess, hintused
 
 import uuid
 from datetime import date, datetime
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class DailyWord(Base):
-    """Pre-computed daily word with its anchor and metadata. One row per calendar day, seeded at startup or by cron."""
+    # pre-computed daily word with its anchor and metadata. one row per calendar day, seeded at startup or by cron.
 
     __tablename__ = "daily_words"
 
@@ -34,7 +34,7 @@ class DailyWord(Base):
 
 
 class GameSession(TimestampMixin, Base):
-    """A single game played by a user (DAILY or FREEPLAY). Each user has a maximum of ONE DAILY session per day."""
+    # a single game played by a user (daily or freeplay). each user has a maximum of one daily session per day. freeplay is currently disabled.
 
     __tablename__ = "game_sessions"
 
@@ -82,10 +82,10 @@ class GameSession(TimestampMixin, Base):
 
 
 class Guess(Base):
-    """Individual guess within a game session.Unique on (session_id, word) to support retries."""
+    # individual guess within a game session. unique on (session_id, word) to support retries.
 
     __tablename__ = "guesses"
-    __table_args__ = (UniqueConstraint("session_id", "word", name="uq_guess_session_word"))
+    __table_args__ = (UniqueConstraint("session_id", "word", name="uq_guess_session_word"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         primary_key=True, default=uuid.uuid4
@@ -112,7 +112,7 @@ class Guess(Base):
 
 
 class HintUsed(Base):
-    """Record of a hint consumed within a game session."""
+    # record of a hint consumed within a game session.
 
     __tablename__ = "hints_used"
 
@@ -129,3 +129,4 @@ class HintUsed(Base):
 
     def __repr__(self) -> str:
         return f"<HintUsed #{self.hint_number} '{self.hint_word}' rank={self.hint_rank}>"
+

@@ -1,4 +1,4 @@
-"""Async PostgreSQL engine"""
+# async postgresql engine
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -15,25 +15,13 @@ engine = create_async_engine(
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
     pool_pre_ping=True,                         # health-check before reuse
-    pool_recycle=settings.DB_POOL_RECYCLE,      # recycle after 1 h
-    echo=settings.DEBUG,                        # SQL logging in dev only
+    pool_recycle=settings.DB_POOL_RECYCLE,      # recycle after 1 hour
+    echo=settings.DEBUG,                        # sql logging in dev only
 )
 
 async_session_factory = async_sessionmaker(
     engine,
     class_=AsyncSession,
-    expire_on_commit=False,                     # avoiding lazy-load after commit
+    expire_on_commit=False,                     # avoid lazy-loading after commit
 )
 
-
-async def get_db_session() -> AsyncSession:
-    """FastAPI dependency, yielding a transactional session"""
-    async with async_session_factory() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()

@@ -1,6 +1,4 @@
-"""Embedding service
-
-OpenAI text-embedding-3-small with SQLite disk cache."""
+# embedding service with sqlite disk cache
 
 import sqlite3
 import threading
@@ -23,7 +21,7 @@ _http_client: httpx.Client | None = None
 
 
 def _get_db() -> sqlite3.Connection:
-    """returns a thread-local SQLite connection"""
+    # returns a thread-local sqlite connection
     if not hasattr(_local, "conn"):
         _local.conn = sqlite3.connect(str(CACHE_DB_PATH), check_same_thread=False)
         _local.conn.execute("PRAGMA journal_mode=WAL")
@@ -41,25 +39,14 @@ def _get_db() -> sqlite3.Connection:
 
 
 def _init_cache() -> None:
-    """ensures the cache table exists
-    CALLED ONCE AT STARTUP"""
-    conn = sqlite3.connect(str(CACHE_DB_PATH))
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS embeddings (
-            word TEXT PRIMARY KEY,
-            vector BLOB NOT NULL
-        )
-        """
-    )
-    conn.commit()
-    conn.close()
+    # ensures the cache table exists at startup
+    _get_db()
+
 
 
 
 def _cache_get(word: str) -> np.ndarray | None:
-    """retrieves a cached vector, or None"""
+    # retrieves a cached vector, or none
     db = _get_db()
     row = db.execute("SELECT vector FROM embeddings WHERE word = ?", (word,)).fetchone()
     if row is None:
@@ -69,7 +56,7 @@ def _cache_get(word: str) -> np.ndarray | None:
 
 
 def _cache_put(word: str, vec: np.ndarray) -> None:
-    """stores a vector in the cache"""
+    # stores a vector in the cache
     db = _get_db()
     db.execute(
         "INSERT OR REPLACE INTO embeddings (word, vector) VALUES (?, ?)",
@@ -79,7 +66,7 @@ def _cache_put(word: str, vec: np.ndarray) -> None:
 
 
 def _cache_get_batch(words: list[str]) -> dict[str, np.ndarray]:
-    """retrieves multiple cached vectors at once"""
+    # retrieves multiple cached vectors at once
     db = _get_db()
     placeholders = ",".join("?" for _ in words)
     rows = db.execute(
@@ -91,7 +78,7 @@ def _cache_get_batch(words: list[str]) -> dict[str, np.ndarray]:
 
 
 def _cache_put_batch(items: dict[str, np.ndarray]) -> None:
-    """stores multiple vectors in the cache"""
+    # stores multiple vectors in the cache
     db = _get_db()
     db.executemany(
         "INSERT OR REPLACE INTO embeddings (word, vector) VALUES (?, ?)",
@@ -102,7 +89,7 @@ def _cache_put_batch(items: dict[str, np.ndarray]) -> None:
 
 
 def init(api_key: str) -> None:
-    """inits the embedding service with an API key"""
+    # inits the embedding service with an api key
     global _api_key, _http_client
     _api_key = api_key
     _http_client = httpx.Client(
@@ -119,14 +106,14 @@ def init(api_key: str) -> None:
         "SELECT COUNT(*) FROM embeddings"
     ).fetchone()[0]
 
-    print(f"Embedding cache: {count} words cached in {CACHE_DB_PATH.name}")
+    print(f"embedding cache: {count} words cached in {CACHE_DB_PATH.name}")
 
 
 def _call_openai(texts: list[str]) -> list[np.ndarray]:
-    """calls the OpenAI embedding API for a batch of texts"""
+    # calls the openai embedding api for a batch of texts
 
     if _http_client is None or _api_key is None:
-        raise RuntimeError("Embedding service not initialized. Call init() first.")
+        raise RuntimeError("embedding service not initialized. call init() first.")
 
     response = _http_client.post(
         "/embeddings",
@@ -143,7 +130,7 @@ def _call_openai(texts: list[str]) -> list[np.ndarray]:
 
 
 def get_embedding(word: str) -> np.ndarray:
-    """gets the embedding vector for a single word, returns from cache if available, otherwise fetches from OpenAI and caches"""
+    # gets the embedding vector for a single word, returns from cache if available, otherwise fetches from openai and caches
     word = word.strip().lower()
 
     cached = _cache_get(word)
@@ -159,7 +146,7 @@ def get_embedding(word: str) -> np.ndarray:
 
 
 def get_embeddings_batch(words: list[str]) -> dict[str, np.ndarray]:
-    """get embedding vectors for a batch of words, only fetches uncached words from OpenAI, returns dict[word -> vector]"""
+    # get embedding vectors for a batch of words, only fetches uncached words from openai, returns dict[word -> vector]
     words = [w.strip().lower() for w in words]
 
     cached = _cache_get_batch(words)
@@ -182,8 +169,9 @@ def get_embeddings_batch(words: list[str]) -> dict[str, np.ndarray]:
 
 
 def cache_stats() -> dict:
-    """returns cache statistics"""
+    # returns cache statistics
     conn = sqlite3.connect(str(CACHE_DB_PATH))
     count = conn.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
     conn.close()
     return {"cached_words": count, "cache_path": str(CACHE_DB_PATH)}
+

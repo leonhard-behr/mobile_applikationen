@@ -5,6 +5,7 @@ import logging
 import json
 from typing import Any
 import redis.asyncio as aioredis
+from fastapi import HTTPException, status
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)

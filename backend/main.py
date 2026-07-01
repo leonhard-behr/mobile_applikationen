@@ -1,12 +1,10 @@
-"""
-FastAPI entry point
-
-initializes the embedding service and mounts the auth + game routers. 
-main logic in
-
-app/services/game.py
-app/services/ranking.py.
-"""
+# fastapi entry point
+#
+# initializes the embedding service and mounts the auth + game routers. 
+# main logic in
+#
+# app/services/game.py
+# app/services/ranking.py.
 
 import asyncio
 import os
@@ -23,7 +21,6 @@ from app.services.ranking import ranking_service
 from data.words import get_daily_word
 
 from app.core.middleware import CorrelationIdMiddleware, RateLimitMiddleware
-import os
 
 from app.routers.auth import router as auth_router  # noqa: E402
 from app.routers.game import router as game_router  # noqa: E402
@@ -67,11 +64,9 @@ def _startup_sync() -> None:
     logger.info(f"Daily word rankings ready: {len(cr.rankings)} words.")
     logger.info(f"anchor='{cr.anchor_word}' ({cr.anchor_similarity:.1f}%, rank={cr.anchor_rank})")
 
-    stats = embedding.cache_stats()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.infra.redis import redis_client
     redis_client.connect()
     await asyncio.to_thread(_startup_sync)
     yield
@@ -97,6 +92,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 app.include_router(auth_router)
