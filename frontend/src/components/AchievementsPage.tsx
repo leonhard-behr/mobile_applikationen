@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls, useMotionValue } from 'framer-motion';
 import { VictoryMap } from './VictoryMap';
 import { TopoBackground } from './TopoBackground';
-import { statsApi, type JourneyStation, type ProfileStats, type Coordinate } from '../api';
+import { statsApi, api, type JourneyStation, type ProfileStats, type Coordinate } from '../api';
 import {
   getPerformanceColor,
   getPerformanceShadow,
@@ -111,13 +111,16 @@ export function AchievementsPage() {
     }
   }, [stations]);
 
-  // handles clicking a completed station: fetches PCA coordinates
+  // handles clicking a completed station: fetches pca coordinates
   const handleStationClick = async (station: JourneyStation) => {
     if (station.status !== 'completed' || !station.word) return;
     try {
-      setSelected({ station, coordinates: [] });
+      const res = await api.victoryByDay(station.date);
+      setSelected({ station, coordinates: res.coordinates });
     } catch (err) {
       console.error('Failed to load station details:', err);
+      // fallback to showing details without victory map if request fails
+      setSelected({ station, coordinates: [] });
     }
   };
 

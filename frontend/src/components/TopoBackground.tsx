@@ -2,16 +2,15 @@ import { useMemo } from 'react';
 import { contours } from 'd3-contour';
 import { geoPath, geoIdentity } from 'd3-geo';
 
-// 
-// TOPO BACKGROUND FOR ACHIEVEMENTS AND TUTORIAL
-// (see GameTopoBackground.tsx)
-// 
+// topo background for achievements and tutorial
+// (see gametopobackground.tsx)
 
 
+// THIS SECTION WAS PARTIALLY CREATED WITH GENERATIVE AI
 function heightAt(ix: number, iy: number, gridW: number, gridH: number): number {
   const nx = ix / gridW;
   const aspect = gridH / gridW;
-  const ny = (iy / gridH) * aspect;  // compressed: same spatial frequency as X
+  const ny = (iy / gridH) * aspect;  // compressed: same spatial frequency as x
 
   const cx = (nx - 0.5) * 2;
   const edgeHeight = Math.pow(Math.abs(cx), 1.6) * 0.6;

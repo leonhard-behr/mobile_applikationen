@@ -2,15 +2,11 @@ import { useMemo } from 'react';
 import { contours } from 'd3-contour';
 import { geoPath, geoIdentity } from 'd3-geo';
 
-// 
-// TOPO BACKGROUND FOR ACHIEVEMENTS AND TUTORIAL
-// (see GameTopoBackground.tsx)
-// 
+// topo background for daily game page
+// (see topobackground.tsx)
 
-/**
- * computing temperature values from 0-1 based on the best rank.
- * 0 cold, 1 hot. 
- */
+
+// THIS SECTION WAS PARTIALLY CREATED WITH GENERATIVE AI
 function rankToTemperature(bestRank: number | null): number {
   if (bestRank === null || bestRank <= 0) return 0;
   if (bestRank >= 1000) return 0;
@@ -18,6 +14,7 @@ function rankToTemperature(bestRank: number | null): number {
   return Math.pow(1 - (bestRank - 1) / 999, 1.5);
 }
 
+// THIS SECTION WAS PARTIALLY CREATED WITH GENERATIVE AI
 function gameHeight(
   ix: number, iy: number,
   gridW: number, gridH: number,
@@ -48,6 +45,7 @@ function gameHeight(
   return Math.max(0, edge * (1 + breathe) + ridge + fine + 0.05);
 }
 
+// THIS SECTION WAS PARTIALLY CREATED WITH GENERATIVE AI
 function getColors(count: number): { fills: string[]; strokes: string[] } {
   const fills: string[] = [];
   const strokes: string[] = [];

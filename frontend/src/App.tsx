@@ -75,7 +75,7 @@ function AuthenticatedApp() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
   const game = useGame();
-  const { stats, recordWin } = useStats();
+  const { recordWin } = useStats();
   const winRecorded = useRef(false);
 
   useEffect(() => {
@@ -108,7 +108,6 @@ function AuthenticatedApp() {
               >
                 <HomePage
                   game={game}
-                  stats={stats}
                   bestRank={bestRank}
                 />
               </motion.div>
@@ -174,17 +173,17 @@ function AuthenticatedApp() {
   );
 }
 
-// HOME PAGE
+// home page
 
 interface HomePageProps {
   game: ReturnType<typeof import('./hooks/useGame').useGame>;
-  stats: { currentStreak: number; bestStreak: number; gamesWon: number };
   bestRank: number | null;
 }
 
-function HomePage({ game, bestRank }: HomePageProps) { // stats
+function HomePage({ game, bestRank }: HomePageProps) {
 
-  // LOADING STATE
+
+  // loading state
   if (game.loading && game.guesses.length === 0) {
     return (
       <div
@@ -215,7 +214,7 @@ function HomePage({ game, bestRank }: HomePageProps) { // stats
     );
   }
 
-  // ERROR STATE
+  // error state
   if (game.error && game.guesses.length === 0) {
     return (
       <div
@@ -362,7 +361,7 @@ function HomePage({ game, bestRank }: HomePageProps) { // stats
           })()}
         </motion.div>
 
-        {/* errpr */}
+        {/* error */}
         <AnimatePresence>
           {game.error && game.guesses.length > 0 && (
             <motion.div

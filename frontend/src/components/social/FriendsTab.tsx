@@ -19,6 +19,7 @@ interface FriendsTabProps {
 export function FriendsTab({
   friends,
   incoming,
+  outgoing,
   searchUsername,
   setSearchUsername,
   searchStatus,
@@ -98,6 +99,40 @@ export function FriendsTab({
                   >
                     Decline
                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* pending outgoing requests */}
+      {outgoing && outgoing.length > 0 && (
+        <div>
+          <h3 style={{ fontSize: '13px', fontWeight: 900, color: 'var(--color-text-secondary)', marginBottom: '8px', textTransform: 'uppercase' }}>
+            Sent Requests ({outgoing.length})
+          </h3>
+          <div className="flex flex-col gap-2">
+            {outgoing.map((req) => (
+              <div
+                key={req.request_id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '10px 12px',
+                  background: 'rgba(0, 0, 0, 0.02)',
+                  border: '1.5px solid rgba(0, 0, 0, 0.05)',
+                  borderRadius: '12px',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                    {req.display_name || req.username}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>@{req.username}</div>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600, paddingRight: '8px' }}>
+                  Pending
                 </div>
               </div>
             ))}

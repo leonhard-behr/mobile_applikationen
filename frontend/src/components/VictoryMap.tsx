@@ -154,7 +154,7 @@ export function VictoryMap({ coordinates, totalAttempts, title, subtitle, compac
               dot={false}
               opacity={0.35}
             />
-            {/* scater dots */}
+            {/* scatter dots */}
             <Scatter
               dataKey="y"
               fill="#8b5cf6"

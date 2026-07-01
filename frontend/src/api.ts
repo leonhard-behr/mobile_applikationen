@@ -268,6 +268,9 @@ export const api = {
       body: JSON.stringify({ words }),
     }),
 
+  victoryByDay: (day: string) =>
+    request<VictoryData>(`${BASE_GAME}/victory/${day}`),
+
   newGame: () =>
     request<NewGameData>(`${BASE_GAME}/new`, { method: 'POST' }),
 };
