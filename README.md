@@ -9,11 +9,11 @@ Projektarbeit im Modul *KI in mobilen Applikationen* an der Hochschule für ange
 
 ![](architecture_mobile_applikationen_2_2.drawio.png)
 
-**Nginx** (aus [``nginx.conf``](frontend\nginx.conf)):
+**Nginx** (aus [``nginx.conf``](frontend/nginx.conf)):
 - API-Anfragen an Gunicorn auf Port 6000 weiterleiten
 - Static files aus ``frontend/dist`` serve
 
-**Middleware** (aus [``main.py``](backend\main.py)):
+**Middleware** (aus [``main.py``](backend/main.py)):
 1. CORS: Origin-Validierung gegen Allowlist
 2. Rate Limit: Redis Sliding Window (100 Anfragen pro 60 Sekunden je IP)
 3. UUID Injection: ``X-Correlation-ID``-Header für das Request-Tracing
@@ -22,7 +22,7 @@ Projektarbeit im Modul *KI in mobilen Applikationen* an der Hochschule für ange
 
 ### Request-Ablauf
 
-Beispielhafter Ablauf eines ``POST /api/game/guess`` requests:
+Beispielhafter Ablauf eines ``POST /api/game/guess`` Requests:
 
 ```mermaid
 sequenceDiagram
@@ -80,7 +80,7 @@ npm run build
 ```
 
 #### Backend
-Docker Compose verwaltet drei Container: FastAPI-Backend, PostgreSQL und Redis. Im Dockerfile ist das Ausführen des Shell Skripts [``entrypoint.sh``](backend\entrypoint.sh) als ENTRYPOINT konfiguriert. Das Skript wartet auf die Datenbankverbindung, führt die Datenbank-Migrationen für PostgreSQL via Alembic aus (SQLite wird bei App-Start automatisch initialisiert) und startet anschließend den Gunicorn-Server.
+Docker Compose verwaltet drei Container: FastAPI-Backend, PostgreSQL und Redis. Im Dockerfile ist das Ausführen des Shell-Skripts [``entrypoint.sh``](backend/entrypoint.sh) als ENTRYPOINT konfiguriert. Das Skript wartet auf die Datenbankverbindung, führt die Datenbank-Migrationen für PostgreSQL via Alembic aus (SQLite wird bei App-Start automatisch initialisiert) und startet anschließend den Gunicorn-Server.
 
 ```shell
 ssh root@178.104.137.28
@@ -118,7 +118,7 @@ FastAPI organisiert die Logik in 4 dedizierten Routern (Auth, Game, Stats, Socia
 
 #### Authentifizierung
 
-Das System verwendet ein **Dual-Token-Verfahren** (aus [`security.py`](backend\app\core\security.py)):
+Das System verwendet ein **Dual-Token-Verfahren** (aus [`security.py`](backend/app/core/security.py)):
 
 | Token | Laufzeit | Übertragung | Zweck |
 | :--- | :--- | :--- | :--- |
@@ -214,7 +214,7 @@ Eine direkte PostgreSQL oder Redis Installation auf Ubuntu wäre schneller aufge
 
 - **Isolation:** Jeder Container hat seine eigene Laufzeitumgebung. Python-Abhängigkeiten des Backends interferieren nicht mit dem System.
 - **Reproduzierbarkeit:** Docker Compose startet exakt dieselbe Umgebung auf jedem Server, unabhängig von der Umgebung.
-- **Startup-Reihenfolge:** Docker Compose verwaltet die Abhängigkeitskette mit `depends_on` und `healthcheck`. Das Backend startet erst, wenn PostgreSQL und Redis als aktiv sind.
+- **Startup-Reihenfolge:** Docker Compose verwaltet die Abhängigkeitskette mit `depends_on` und `healthcheck`. Das Backend startet erst, wenn PostgreSQL und Redis aktiv sind.
 
 
 
@@ -230,7 +230,7 @@ SQLite benötigt keine Migrationen, da es ausschließlich als Cache dient und di
 
 #### Warum FastAPI (async) statt Flask oder Django?
 
-Das Spiel führt bei jedem Rateversuch eine externe API-Anfrage (zu OpenAI) durch. In einem synchronen Framework wie z.B.Flask würde der Worker-Thread während dieser HTTP-Anfrage blockieren und keine anderen Anfragen bedienen können. 
+Das Spiel führt bei jedem Rateversuch eine externe API-Anfrage (zu OpenAI) durch. In einem synchronen Framework wie z. B. Flask würde der Worker-Thread während dieser HTTP-Anfrage blockieren und keine anderen Anfragen bedienen können.
 
 FastAPI ist asynchron und kann parallel mehrere Anfragen bearbeiten. Zusätzlich liefert FastAPI automatische Validierung via Pydantic und eine OpenAPI-Dokumentation ohne zusätzlichen Aufwand.
 
@@ -245,7 +245,7 @@ FastAPI/Uvicorn ist single-threaded pro Worker-Prozess. Mehrere Worker erhöhen 
 
 #### Warum JWT statt Sessions?
 
-Die Applikation ist zustandslos auf Server-Seite, es ist kein Session-Speicher nötig. JWT-Tokens tragen alle nötigen Informationen (User-ID, Ablaufzeit, Token-Typ) selbst. Eine Anfrage kann auf jeden der 4 Worker landen, ohne dass dieser den Session-Zustand kennen muss.
+Die Applikation ist zustandslos auf der Serverseite, es ist kein Session-Speicher nötig. JWT-Tokens tragen alle nötigen Informationen (User-ID, Ablaufzeit, Token-Typ) selbst. Eine Anfrage kann auf jeden der 4 Worker landen, ohne dass dieser den Session-Zustand kennen muss.
 
 
 
@@ -262,11 +262,11 @@ Nginx übernimmt TLS-Terminierung, Gzip-Komprimierung und das Ausliefern statisc
 
 - **Registrierung & Authentifizierung:** Registrierung, Login, Profilverwaltung und Dual-Token-Sicherungsverfahren (JWT + HttpOnly Cookie).
 
-- **Spielmodi:** Tägliche Herausforderung (einheitliches Wort pro Tag) sowie freier Spielmodus (freier Spielmodus wird aktuell im Frontend nicht angezeigt).
+- **Spielmodi:** Tägliche Herausforderung (einheitliches Wort pro Tag) sowie freier Spielmodus (der freie Spielmodus wird aktuell im Frontend nicht angezeigt).
 
 - **Sofortiges Feedback:** Vergleiche durch semantischer Nähe und Ranks.
 
-- **Hinweise:** Schrittweise Buchstabeneaufdeckung (jeweils nach 3 Versuchen) sowie maximal 3 (adaptive) Hinweise pro Spiel.
+- **Hinweise:** Schrittweise Buchstabenaufdeckung (jeweils nach 3 Versuchen) sowie maximal 3 (adaptive) Hinweise pro Spiel.
 
 - **"Semantic Journey" Visualisierung:** Grafische Darstellung des semantischen Verlaufs nach erfolgreichem Spielabschluss.
 
