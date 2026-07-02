@@ -22,6 +22,8 @@ Projektarbeit im Modul *KI in mobilen Applikationen* an der Hochschule für ange
 
 ### Request-Ablauf
 
+Beispielhafter Ablauf eines ``POST /api/game/guess`` requests:
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -301,7 +303,7 @@ Das Finden von Wörtern durch semantische Ähnlichkeit anstelle von reinem Buchs
 
 ### Tests
 
-Das Projekt verfügt über eine automatische Tests (``pytest`` + ``httpx``), die lokal (dev) als auch nach dem Deployment ausgeführt werden können (prod). Die Tests decken alle Kernfunktionen (Auth, Guess, Social) und kritische Edge Cases (double registrations, invalid guesses, limit violations) ab.
+Das Repo verfügt über automatische Tests (``pytest`` + ``httpx``), die lokal (dev) als auch nach dem Deployment ausgeführt werden können (prod). Die Tests decken alle Kernfunktionen (Auth, Guess, Social) und kritische Edge Cases (double registrations, invalid guesses, limit violations) ab.
 
 #### Testausführung
 
